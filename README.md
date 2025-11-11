@@ -1,1 +1,0 @@
-# football-rational-betting-tracker

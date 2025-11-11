@@ -1,0 +1,90 @@
+{
+  "pages": [
+    {
+      "path": "pages/home/home",
+      "style": {
+        "navigationBarTitleText": "理性投资助手",
+        "navigationBarBackgroundColor": "#1E5631",
+        "navigationBarTextStyle": "white"
+      }
+    },
+    {
+      "path": "pages/record/record",
+      "style": {
+        "navigationBarTitleText": "投注记录",
+        "navigationBarBackgroundColor": "#1E5631",
+        "navigationBarTextStyle": "white"
+      }
+    },
+    {
+      "path": "pages/analysis/analysis",
+      "style": {
+        "navigationBarTitleText": "盈亏分析",
+        "navigationBarBackgroundColor": "#1E5631",
+        "navigationBarTextStyle": "white"
+      }
+    },
+    {
+      "path": "pages/strategy/strategy",
+      "style": {
+        "navigationBarTitleText": "投注策略",
+        "navigationBarBackgroundColor": "#1E5631",
+        "navigationBarTextStyle": "white"
+      }
+    },
+    {
+      "path": "pages/settings/settings",
+      "style": {
+        "navigationBarTitleText": "策略设置",
+        "navigationBarBackgroundColor": "#1E5631",
+        "navigationBarTextStyle": "white"
+      }
+    },
+    {
+      "path": "pages/matches/list",
+      "style": {
+        "navigationBarTitleText": "赛事中心",
+        "navigationBarBackgroundColor": "#1E5631",
+        "navigationBarTextStyle": "white"
+      }
+    },
+    {
+      "path": "pages/matches/plays",
+      "style": {
+        "navigationBarTitleText": "更多玩法",
+        "navigationBarBackgroundColor": "#1E5631",
+        "navigationBarTextStyle": "white"
+      }
+    }
+  ],
+  "globalStyle": {
+    "navigationBarTextStyle": "white",
+    "navigationBarTitleText": "足球理性投资助手",
+    "navigationBarBackgroundColor": "#1E5631",
+    "backgroundColor": "#F4F5F7"
+  },
+  "tabBar": {
+    "color": "#7C8898",
+    "selectedColor": "#1E5631",
+    "backgroundColor": "#FFFFFF",
+    "borderStyle": "black",
+    "list": [
+      {
+        "pagePath": "pages/home/home",
+        "text": "首页"
+      },
+      {
+        "pagePath": "pages/matches/list",
+        "text": "赛事中心"
+      },
+      {
+        "pagePath": "pages/strategy/strategy",
+        "text": "策略建议"
+      },
+      {
+        "pagePath": "pages/settings/settings",
+        "text": "个人中心"
+      }
+    ]
+  }
+}

@@ -1,0 +1,40 @@
+$frbt-primary: #1E5631;
+$frbt-secondary: #D4AF37;
+$frbt-bg: #F8F8F8;
+$frbt-card: #FFFFFF;
+$frbt-text: #1C1C1C;
+$frbt-positive: #2AA876;
+$frbt-negative: #E94F37;
+
+@mixin card {
+  background-color: $frbt-card;
+  border-radius: 20rpx;
+  padding: 24rpx;
+  box-shadow: 0 12rpx 24rpx rgba(30, 86, 49, 0.08);
+}
+
+.flex {
+  display: flex;
+}
+
+.flex-between {
+  @extend .flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.section-title {
+  font-size: 34rpx;
+  font-weight: 600;
+  color: $frbt-primary;
+  margin: 48rpx 0 24rpx;
+}
+
+button.primary-btn {
+  background: linear-gradient(135deg, $frbt-primary, darken($frbt-primary, 8%));
+  color: #fff;
+  border: none;
+  border-radius: 999rpx;
+  padding: 22rpx 48rpx;
+  font-size: 28rpx;
+}

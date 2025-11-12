@@ -1,3 +1,36 @@
-node_modules
-.venv
-server/.venv
+# Node / UniApp artifacts
+node_modules/
+unpackage/
+dist/
+.vite/
+.uniapp_cache/
+
+# Logs & diagnostics
+npm-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+*.log
+
+# Local env/config
+.env
+.env.*
+!.env.example
+
+# Editor & OS
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Python virtualenvs & caches
+.venv/
+server/.venv/
+server/__pycache__/
+server/**/*.pyc
+server/.pytest_cache/
+server/.mypy_cache/
+server/.ruff_cache/
+server/.coverage
+server/htmlcov/
+server/.env
+server/.env.*

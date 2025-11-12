@@ -1,119 +1,191 @@
 <template>
   <view class="matches-page">
-    <scroll-view scroll-y class="list" lower-threshold="60" @scrolltolower="handleScrollLower">
-      <view v-if="loading && matches.length === 0" class="state">正在加载赛事...</view>
-      <view v-else-if="!loading && matches.length === 0" class="state empty">暂无可售赛事</view>
+    <mescroll-body ref="mescrollRef" :down="downOption" :up="upOption" :bottombar="false" @init="mescrollInit" @down="downCallback" @up="upCallback">
+      <view class="list-content">
+        <view v-if="visibleMatches.length > 0">
+          <view class="day-section" v-for="group in groupedMatches" :key="group.date">
+            <view class="day-header" @tap="toggleGroup(group.date)">
+              <text class="day-title"
+                >{{ formatDateLabel(group.date) }} 共<text class="count">{{ group.matches.length }}</text
+                >场 <text class="tip">(红框选项可投单关)</text></text
+              >
+              <text class="arrow" :class="{ collapsed: collapsedMap[group.date] }">▲</text>
+            </view>
 
-      <view v-else>
-        <view class="day-section" v-for="group in groupedMatches" :key="group.date">
-          <view class="day-header" @tap="toggleGroup(group.date)">
-            <text class="day-title"
-              >{{ formatDateLabel(group.date) }} 共<text class="count">{{ group.matches.length }}</text
-              >场 <text class="tip">(红框选项可投单关)</text></text
-            >
-            <text class="arrow" :class="{ collapsed: collapsedMap[group.date] }">▲</text>
-          </view>
-
-          <view class="match-wrap" v-show="!collapsedMap[group.date]">
-            <view class="match-row" v-for="(match, index) in group.matches" :key="match.matchId">
-              <view class="row-left">
-                <text class="code">{{ formatMatchCode(group.date, index + 1) }}</text>
-                <text class="league" :style="{ backgroundColor: pickLeagueColor(match.league) }">{{ truncateText(match.league, 3) }}</text>
-                <text class="time">{{ formatTime(match) }}</text>
-                <text class="attitude" v-if="match.notice">态度</text>
-              </view>
-
-              <view class="row-right">
-                <view class="teams-info">
-                  <view class="teams-container">
-                    <text class="team-name team-home">{{ truncateText(match.homeTeam.name, 3) }}</text>
-                    <text class="vs">VS</text>
-                    <text class="team-name team-away">{{ truncateText(match.awayTeam.name, 3) }}</text>
-                  </view>
+            <view class="match-wrap" v-show="!collapsedMap[group.date]">
+              <view class="match-row" v-for="(match, index) in group.matches" :key="match.matchId">
+                <view class="row-left">
+                  <text class="code">{{ displayMatchCode(match, group.date, index + 1) }}</text>
+                  <text class="league" :style="{ backgroundColor: pickLeagueColor(match.league) }">{{ truncateText(match.league, 3) }}</text>
+                  <text class="time">{{ formatTime(match) }}</text>
+                  <text class="attitude" v-if="match.notice">态度</text>
                 </view>
 
-                <view class="main-content">
-                  <view class="odds-section">
-                    <!-- 胜平负 -->
-                    <view class="odds-row">
-                      <text class="handicap">0</text>
-                      <template v-if="match.wdl?.had">
-                        <view class="odds-item single-ok">
-                          <text class="label">胜</text>
-                          <text class="value">{{ formatOdds(match.wdl.had.win_odds) }}</text>
-                        </view>
-                        <view class="odds-item">
-                          <text class="label">平</text>
-                          <text class="value">{{ formatOdds(match.wdl.had.draw_odds) }}</text>
-                        </view>
-                        <view class="odds-item">
-                          <text class="label">负</text>
-                          <text class="value">{{ formatOdds(match.wdl.had.lose_odds) }}</text>
-                        </view>
-                      </template>
-                      <template v-else>
-                        <view class="odds-item not-sale">
-                          <text class="not-sale-text">未</text>
-                        </view>
-                        <view class="odds-item not-sale">
-                          <text class="not-sale-text">开</text>
-                        </view>
-                        <view class="odds-item not-sale">
-                          <text class="not-sale-text">售</text>
-                        </view>
-                      </template>
-                    </view>
-
-                    <!-- 让球胜平负 -->
-                    <view class="odds-row" v-if="match.wdl?.hhad">
-                      <text class="handicap" :class="getHandicapClass(match.wdl.hhad.handicap)">{{ formatHandicap(match.wdl.hhad.handicap) }}</text>
-                      <view class="odds-item">
-                        <text class="label">胜</text>
-                        <text class="value">{{ formatOdds(match.wdl.hhad.win_odds) }}</text>
-                      </view>
-                      <view class="odds-item">
-                        <text class="label">平</text>
-                        <text class="value">{{ formatOdds(match.wdl.hhad.draw_odds) }}</text>
-                      </view>
-                      <view class="odds-item">
-                        <text class="label">负</text>
-                        <text class="value">{{ formatOdds(match.wdl.hhad.lose_odds) }}</text>
-                      </view>
+                <view class="row-right">
+                  <view class="teams-info">
+                    <view class="teams-container">
+                      <text class="team-name team-home">{{ truncateText(match.homeTeam.name, 3) }}</text>
+                      <text class="vs">VS</text>
+                      <text class="team-name team-away">{{ truncateText(match.awayTeam.name, 3) }}</text>
                     </view>
                   </view>
 
-                  <view class="side-links">
-                    <text class="link-index">指数</text>
-                    <text class="link-more" @tap="goPlays(match.matchId, match)">更多玩法</text>
+                  <view class="main-content">
+                    <view class="odds-section">
+                      <!-- 胜平负 -->
+                      <view class="odds-row">
+                        <text class="handicap">0</text>
+                        <template v-if="match.wdl?.had">
+                          <view class="odds-item" :class="{ 'single-ok': isSingleFor(match, 'had') }">
+                            <text class="label">胜</text>
+                            <text class="value">{{ formatOdds(match.wdl.had.win_odds) }}</text>
+                          </view>
+                          <view class="odds-item" :class="{ 'single-ok': isSingleFor(match, 'had') }">
+                            <text class="label">平</text>
+                            <text class="value">{{ formatOdds(match.wdl.had.draw_odds) }}</text>
+                          </view>
+                          <view class="odds-item" :class="{ 'single-ok': isSingleFor(match, 'had') }">
+                            <text class="label">负</text>
+                            <text class="value">{{ formatOdds(match.wdl.had.lose_odds) }}</text>
+                          </view>
+                        </template>
+                        <template v-else>
+                          <view class="odds-item not-sale">
+                            <text class="not-sale-text">未</text>
+                          </view>
+                          <view class="odds-item not-sale">
+                            <text class="not-sale-text">开</text>
+                          </view>
+                          <view class="odds-item not-sale">
+                            <text class="not-sale-text">售</text>
+                          </view>
+                        </template>
+                      </view>
+
+                      <!-- 让球胜平负 -->
+                      <view class="odds-row" v-if="match.wdl?.hhad">
+                        <text class="handicap" :class="getHandicapClass(match.wdl.hhad.handicap)">{{ formatHandicap(match.wdl.hhad.handicap) }}</text>
+                        <view class="odds-item" :class="{ 'single-ok': isSingleFor(match, 'hhad') }">
+                          <text class="label">胜</text>
+                          <text class="value">{{ formatOdds(match.wdl.hhad.win_odds) }}</text>
+                        </view>
+                        <view class="odds-item" :class="{ 'single-ok': isSingleFor(match, 'hhad') }">
+                          <text class="label">平</text>
+                          <text class="value">{{ formatOdds(match.wdl.hhad.draw_odds) }}</text>
+                        </view>
+                        <view class="odds-item" :class="{ 'single-ok': isSingleFor(match, 'hhad') }">
+                          <text class="label">负</text>
+                          <text class="value">{{ formatOdds(match.wdl.hhad.lose_odds) }}</text>
+                        </view>
+                      </view>
+                    </view>
+
+                    <view class="side-links">
+                      <text class="link-index">指数</text>
+                      <text class="link-more" @tap="goPlays(match.matchId, match)">更多玩法</text>
+                    </view>
                   </view>
                 </view>
               </view>
             </view>
           </view>
         </view>
-
-        <view class="state" v-if="loading && matches.length > 0">加载更多...</view>
-        <view class="state" v-else-if="!matchStore.hasMore">已显示全部赛事</view>
       </view>
-    </scroll-view>
-    <QuickRecordFab />
+    </mescroll-body>
   </view>
 </template>
 
 <script setup>
-import { computed, onMounted, reactive } from "vue";
-import { onReachBottom, onShow } from "@dcloudio/uni-app";
+import { computed, reactive, ref } from "vue";
+import { onShow, onPageScroll, onReachBottom } from "@dcloudio/uni-app";
 import dayjs from "dayjs";
+import MescrollBody from "mescroll-uni/mescroll-body.vue";
 import { useMatchStore } from "@/stores/matchStore";
-import QuickRecordFab from "@/components/QuickRecordFab.vue";
 
 const matchStore = useMatchStore();
 const matches = computed(() => matchStore.matches);
 const loading = computed(() => matchStore.loading);
 const collapsedMap = reactive({});
 
+// mescroll 配置
+const mescrollRef = ref(null);
+let mescroll = null;
+
+// 初始化 mescroll
+function mescrollInit(mescrollInstance) {
+  mescroll = mescrollInstance;
+  // 延迟触发上拉加载，确保 mescroll 完全初始化
+  setTimeout(() => {
+    if (mescroll && mescroll.triggerUpScroll) {
+      mescroll.triggerUpScroll();
+    }
+  }, 100);
+}
+
+// 下拉刷新回调
+function downCallback() {
+  matchStore
+    .refreshMatches()
+    .then(() => {
+      if (mescroll) {
+        mescroll.endSuccess();
+      }
+    })
+    .catch(() => {
+      if (mescroll) {
+        mescroll.endErr();
+      }
+    });
+}
+
+// 上拉加载回调（接口一次性返回所有数据，不需要分页）
+function upCallback(page) {
+  // 只处理第一页，因为接口一次性返回所有数据
+  if (page.num === 1) {
+    matchStore
+      .refreshMatches()
+      .then(() => {
+        const dataLength = matches.value.length;
+        if (mescroll) {
+          // 第二个参数传 false，表示没有更多数据
+          mescroll.endSuccess(dataLength, false);
+        }
+      })
+      .catch(() => {
+        if (mescroll) {
+          mescroll.endErr();
+        }
+      });
+  } else {
+    if (mescroll) {
+      mescroll.endSuccess(0, false);
+    }
+  }
+}
+
+// 下拉刷新配置
+const downOption = {
+  auto: false, // 不自动加载
+};
+
+// 上拉加载配置（接口一次性返回所有数据，不需要分页）
+const upOption = {
+  auto: false, // 手动触发上拉加载（在 mescrollInit 中触发）
+  page: {
+    num: 0, // 当前页码,默认0,回调之前会加1,即callback(page)会从1开始
+    size: 1000, // 每页数据的数量（设置一个大值，因为接口返回所有数据）
+  },
+  noMoreSize: 0, // 不显示"无更多数据"提示
+  empty: {
+    use: true, // 使用 mescroll 的空布局
+    tip: "暂无可售赛事", // 空布局提示文本
+  },
+};
+
+const visibleMatches = computed(() => matches.value.filter((match) => !isFinishedMatch(match?.status)));
+
 const groupedMatches = computed(() => {
-  const groups = matches.value.reduce((acc, match) => {
+  const groups = visibleMatches.value.reduce((acc, match) => {
     const key = match.matchDate || "待定";
     if (!acc[key]) acc[key] = [];
     acc[key].push(match);
@@ -125,21 +197,27 @@ const groupedMatches = computed(() => {
       if (b === "待定") return -1;
       return dayjs(a).valueOf() - dayjs(b).valueOf();
     })
-    .map((date) => ({ date, matches: groups[date] }));
-});
-
-onMounted(() => {
-  if (!matchStore.matches.length) {
-    matchStore.refreshMatches();
-  }
-});
-
-onReachBottom(() => {
-  matchStore.loadMore();
+    .map((date) => ({
+      date,
+      matches: groups[date].slice().sort(sortMatchesWithinDay),
+    }));
 });
 
 onShow(() => {
   uni.$emit("tab-active", "matches");
+});
+
+// mescroll-body 需要的页面生命周期
+onPageScroll((e) => {
+  if (mescroll && mescroll.onPageScroll) {
+    mescroll.onPageScroll(e);
+  }
+});
+
+onReachBottom(() => {
+  if (mescroll && mescroll.onReachBottom) {
+    mescroll.onReachBottom();
+  }
 });
 
 function goPlays(matchId, match) {
@@ -172,6 +250,14 @@ function formatDateLabel(date) {
   return `周${weekMap[d.day()]} ${d.format("YYYY-MM-DD")}`;
 }
 
+function displayMatchCode(match, date, index) {
+  const fallbackDate = match?.matchDate || date;
+  if (match?.matchCode) {
+    return match.matchCode;
+  }
+  return formatMatchCode(fallbackDate, index);
+}
+
 function formatMatchCode(date, index) {
   if (!date || date === "待定") {
     return `待${String(index).padStart(3, "0")}`;
@@ -193,6 +279,58 @@ function truncateText(text, maxLength) {
   if (!text) return "";
   if (text.length <= maxLength) return text;
   return text.substring(0, maxLength);
+}
+
+function isSingleFor(match, oddsType) {
+  const oddsSingle = match?.wdl?.[oddsType]?.is_single;
+  if (oddsSingle !== undefined && oddsSingle !== null) {
+    return Number(oddsSingle) === 1;
+  }
+  return Boolean(match?.isSingle);
+}
+
+function isFinishedMatch(status) {
+  if (!status) return false;
+  const normalized = String(status).toLowerCase();
+  return normalized === "finished" || normalized === "cancelled";
+}
+
+function sortMatchesWithinDay(a, b) {
+  const timeA = getMatchTimeValue(a);
+  const timeB = getMatchTimeValue(b);
+  if (timeA !== timeB) {
+    return timeA - timeB;
+  }
+  const codeA = getMatchCodeNumber(a);
+  const codeB = getMatchCodeNumber(b);
+  if (codeA !== codeB) {
+    return codeA - codeB;
+  }
+  return (a.matchId || "").localeCompare(b.matchId || "");
+}
+
+function getMatchTimeValue(match) {
+  if (match?.matchDate) {
+    const time = match.matchTime || "00:00:00";
+    const dt = dayjs(`${match.matchDate} ${time}`);
+    if (dt.isValid()) {
+      return dt.valueOf();
+    }
+  }
+  if (match?.kickoff) {
+    const kickoff = dayjs(match.kickoff);
+    if (kickoff.isValid()) {
+      return kickoff.valueOf();
+    }
+  }
+  return Number.MAX_SAFE_INTEGER;
+}
+
+function getMatchCodeNumber(match) {
+  if (!match?.matchCode) return Number.MAX_SAFE_INTEGER;
+  const digits = match.matchCode.replace(/\D/g, "");
+  const value = parseInt(digits, 10);
+  return Number.isNaN(value) ? Number.MAX_SAFE_INTEGER : value;
 }
 
 function getLeagueSuffix(league) {
@@ -222,26 +360,17 @@ function pickLeagueColor(league) {
   const seed = league ? league.charCodeAt(0) : 0;
   return palette[seed % palette.length];
 }
-
-function handleScrollLower() {
-  matchStore.loadMore();
-}
 </script>
 
 <style lang="scss" scoped>
 @import "@/uni.scss";
 
 .matches-page {
-  min-height: 100vh;
-  position: relative;
-  padding-bottom: 200rpx;
   background: #f5f6f8;
 }
 
-.list {
-  height: 100vh;
-  padding: 0 0 120rpx;
-  box-sizing: border-box;
+.list-content {
+  padding-bottom: 0rpx;
 }
 
 .day-section {

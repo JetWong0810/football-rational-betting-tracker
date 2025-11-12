@@ -36,6 +36,7 @@ CREATE TABLE IF NOT EXISTS odds_win_draw_lose (
     win_support REAL,
     draw_support REAL,
     lose_support REAL,
+    is_single INTEGER DEFAULT 0,
     updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
     UNIQUE(match_id, odds_type),
     FOREIGN KEY(match_id) REFERENCES matches(match_id) ON DELETE CASCADE

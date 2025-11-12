@@ -43,8 +43,9 @@ class OddsRepository:
             INSERT INTO odds_win_draw_lose (
                 match_id, odds_type, handicap,
                 win_odds, draw_odds, lose_odds,
-                win_support, draw_support, lose_support, updated_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+                win_support, draw_support, lose_support,
+                is_single, updated_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
             ON CONFLICT(match_id, odds_type)
             DO UPDATE SET
                 handicap=excluded.handicap,
@@ -54,6 +55,7 @@ class OddsRepository:
                 win_support=excluded.win_support,
                 draw_support=excluded.draw_support,
                 lose_support=excluded.lose_support,
+                is_single=excluded.is_single,
                 updated_at=CURRENT_TIMESTAMP
         """
         values = [
@@ -66,6 +68,7 @@ class OddsRepository:
             item.get("win_support"),
             item.get("draw_support"),
             item.get("lose_support"),
+            item.get("is_single", 0),
         ]
         with get_db() as conn:
             conn.execute(sql, values)
@@ -156,8 +159,14 @@ class OddsRepository:
             update_sync_status(conn, total_matches, total_odds)
 
     # Query helpers for API
-    def list_matches(self, *, date: Optional[str] = None, league: Optional[str] = None,
-                     page: int = 1, page_size: int = 20) -> Dict[str, Any]:
+    def list_matches(
+        self,
+        *,
+        date: Optional[str] = None,
+        league: Optional[str] = None,
+        page: int = 1,
+        page_size: int = 20,
+    ) -> Dict[str, Any]:
         offset = (page - 1) * page_size
         where = []
         params: List[Any] = []
@@ -167,8 +176,30 @@ class OddsRepository:
         if league:
             where.append("league_name = ?")
             params.append(league)
+        if not date:
+            latest_issue = None
+            with get_db() as conn:
+                cur = conn.execute("SELECT MAX(match_number) FROM matches")
+                row = cur.fetchone()
+                latest_issue = row[0] if row and row[0] else None
+            if latest_issue:
+                where.append("match_number = ?")
+                params.append(latest_issue)
+            today = datetime.now().strftime("%Y-%m-%d")
+            where.append("(match_date IS NULL OR match_date >= ?)")
+            params.append(today)
+            now_ts = int(datetime.now().timestamp())
+            where.append("(match_timestamp IS NULL OR match_timestamp >= ?)")
+            params.append(now_ts)
+        # 默认只展示在售或未开赛的赛事
+        where.append("(match_status IS NULL OR match_status NOT IN ('finished', 'cancelled'))")
         where_clause = f"WHERE {' AND '.join(where)}" if where else ""
-        base_sql = f"SELECT * FROM matches {where_clause} ORDER BY match_timestamp DESC LIMIT ? OFFSET ?"
+        base_sql = (
+            "SELECT * FROM matches "
+            f"{where_clause} "
+            "ORDER BY match_date ASC, COALESCE(match_time, ''), match_code ASC "
+            "LIMIT ? OFFSET ?"
+        )
         with get_db() as conn:
             cur = conn.execute(base_sql, (*params, page_size, offset))
             rows = [dict(row) for row in cur.fetchall()]

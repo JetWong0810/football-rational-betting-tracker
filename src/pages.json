@@ -45,7 +45,9 @@
       "style": {
         "navigationBarTitleText": "赛事中心",
         "navigationBarBackgroundColor": "#1E5631",
-        "navigationBarTextStyle": "white"
+        "navigationBarTextStyle": "white",
+        "backgroundColorTop": "#f5f6f8",
+        "backgroundColorBottom": "#f5f6f8"
       }
     },
     {

@@ -16,6 +16,32 @@ def parse_decimal(value: Optional[str]) -> Optional[float]:
         return None
 
 
+def parse_single_flag(value: Optional[object]) -> int:
+    if value is None:
+        return 0
+    if isinstance(value, bool):
+        return 1 if value else 0
+    if isinstance(value, (int, float)):
+        return 1 if int(value) == 1 else 0
+    if isinstance(value, str):
+        token = value.strip().lower()
+        return 1 if token in {"1", "true", "y", "yes"} else 0
+    return 0
+
+
+def extract_pool_single_flags(match_data: Dict) -> Dict[str, int]:
+    flags: Dict[str, int] = {}
+    for pool in match_data.get("poolList", []):
+        code = str(pool.get("poolCode") or "").strip().lower()
+        if not code:
+            continue
+        flag = pool.get("single")
+        if flag is None:
+            flag = pool.get("bettingSingle")
+        flags[code] = parse_single_flag(flag)
+    return flags
+
+
 class SportterySyncService:
     def __init__(self, repository: Optional[OddsRepository] = None):
         self.repository = repository or OddsRepository()
@@ -44,10 +70,11 @@ class SportterySyncService:
         for date_group in match_info_list:
             for match_data in date_group.get("subMatchList", []):
                 if pool_name == "had_hhad":
+                    single_flags = extract_pool_single_flags(match_data)
                     match = self.build_match(match_data)
                     self.repository.upsert_match(match)
                     self.stats["matches"] += 1
-                    for odds in self.build_had_hhad(match_data):
+                    for odds in self.build_had_hhad(match_data, single_flags):
                         self.repository.upsert_odds_wdl(odds)
                         self.stats["odds"] += 1
                 elif pool_name == "crs":
@@ -99,17 +126,21 @@ class SportterySyncService:
             "away_team_id": match_data.get("awayTeamId"),
             "away_team_name": match_data.get("awayTeamAbbName"),
             "away_team_rank": match_data.get("awayRank"),
-            "is_single": 1 if match_data.get("bettingSingle") == 1 else 0,
+            "is_single": parse_single_flag(match_data.get("bettingSingle")),
             "match_status": match_status,
             "notice": match_data.get("matchTips"),
             "odds_update_time": match_data.get("oddsUpdateTime"),
         }
 
-    def build_had_hhad(self, match_data: Dict) -> List[Dict]:
+    def build_had_hhad(self, match_data: Dict, single_flags: Optional[Dict[str, int]] = None) -> List[Dict]:
         match_id = str(match_data.get("matchId"))
         results: List[Dict] = []
+        single_flags = single_flags or {}
+        default_single = parse_single_flag(match_data.get("bettingSingle"))
+
         had_data = match_data.get("had", {})
         if had_data and had_data.get("h"):
+            is_single = single_flags.get("had", default_single)
             results.append(
                 {
                     "match_id": match_id,
@@ -121,6 +152,7 @@ class SportterySyncService:
                     "win_support": parse_decimal(had_data.get("h_trend")),
                     "draw_support": parse_decimal(had_data.get("d_trend")),
                     "lose_support": parse_decimal(had_data.get("a_trend")),
+                    "is_single": is_single,
                 }
             )
         hhad_data = match_data.get("hhad", {})
@@ -130,6 +162,7 @@ class SportterySyncService:
                 handicap = float(goal_line)
             except (TypeError, ValueError):
                 handicap = 0
+            is_single = single_flags.get("hhad", default_single)
             results.append(
                 {
                     "match_id": match_id,
@@ -141,6 +174,7 @@ class SportterySyncService:
                     "win_support": parse_decimal(hhad_data.get("h_trend")),
                     "draw_support": parse_decimal(hhad_data.get("d_trend")),
                     "lose_support": parse_decimal(hhad_data.get("a_trend")),
+                    "is_single": is_single,
                 }
             )
         return results

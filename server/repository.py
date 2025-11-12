@@ -168,7 +168,7 @@ class OddsRepository:
             where.append("league_name = ?")
             params.append(league)
         where_clause = f"WHERE {' AND '.join(where)}" if where else ""
-        base_sql = f"SELECT * FROM matches {where_clause} ORDER BY match_timestamp LIMIT ? OFFSET ?"
+        base_sql = f"SELECT * FROM matches {where_clause} ORDER BY match_timestamp DESC LIMIT ? OFFSET ?"
         with get_db() as conn:
             cur = conn.execute(base_sql, (*params, page_size, offset))
             rows = [dict(row) for row in cur.fetchall()]

@@ -35,7 +35,7 @@
     "build:quickapp-webview": "uni build -p quickapp-webview",
     "build:quickapp-webview-huawei": "uni build -p quickapp-webview-huawei",
     "build:quickapp-webview-union": "uni build -p quickapp-webview-union",
-    "server:dev": "cd server && uvicorn server.main:app --reload --port 7001"
+    "server:dev": "uvicorn server.main:app --reload --port 7001"
   },
   "dependencies": {
     "@dcloudio/uni-app": "3.0.0-4080420251103001",

@@ -25,39 +25,48 @@
 
               <view class="row-right">
                 <view class="teams-info">
-                  <view class="team-line">
-                    <text class="rank" v-if="match.homeTeam.rank">[{{ match.homeTeam.rank }}]{{ getLeagueSuffix(match.league) }}</text>
-                    <text class="name">{{ truncateText(match.homeTeam.name, 3) }}</text>
-                  </view>
-                  <text class="vs">VS</text>
-                  <view class="team-line">
-                    <text class="name">{{ truncateText(match.awayTeam.name, 3) }}</text>
-                    <text class="rank" v-if="match.awayTeam.rank">[{{ match.awayTeam.rank }}]{{ getLeagueSuffix(match.league) }}</text>
+                  <view class="teams-container">
+                    <text class="team-name team-home">{{ truncateText(match.homeTeam.name, 3) }}</text>
+                    <text class="vs">VS</text>
+                    <text class="team-name team-away">{{ truncateText(match.awayTeam.name, 3) }}</text>
                   </view>
                 </view>
 
-                <view class="odds-section">
-                  <view class="odds-row" v-if="match.wdl?.had">
-                    <text class="handicap">0</text>
-                    <view class="odds-items">
-                      <view class="odds-item single-ok">
-                        <text class="label">胜</text>
-                        <text class="value">{{ formatOdds(match.wdl.had.win_odds) }}</text>
-                      </view>
-                      <view class="odds-item">
-                        <text class="label">平</text>
-                        <text class="value">{{ formatOdds(match.wdl.had.draw_odds) }}</text>
-                      </view>
-                      <view class="odds-item">
-                        <text class="label">负</text>
-                        <text class="value">{{ formatOdds(match.wdl.had.lose_odds) }}</text>
-                      </view>
+                <view class="main-content">
+                  <view class="odds-section">
+                    <!-- 胜平负 -->
+                    <view class="odds-row">
+                      <text class="handicap">0</text>
+                      <template v-if="match.wdl?.had">
+                        <view class="odds-item single-ok">
+                          <text class="label">胜</text>
+                          <text class="value">{{ formatOdds(match.wdl.had.win_odds) }}</text>
+                        </view>
+                        <view class="odds-item">
+                          <text class="label">平</text>
+                          <text class="value">{{ formatOdds(match.wdl.had.draw_odds) }}</text>
+                        </view>
+                        <view class="odds-item">
+                          <text class="label">负</text>
+                          <text class="value">{{ formatOdds(match.wdl.had.lose_odds) }}</text>
+                        </view>
+                      </template>
+                      <template v-else>
+                        <view class="odds-item not-sale">
+                          <text class="not-sale-text">未</text>
+                        </view>
+                        <view class="odds-item not-sale">
+                          <text class="not-sale-text">开</text>
+                        </view>
+                        <view class="odds-item not-sale">
+                          <text class="not-sale-text">售</text>
+                        </view>
+                      </template>
                     </view>
-                  </view>
 
-                  <view class="odds-row" v-if="match.wdl?.hhad">
-                    <text class="handicap" :class="getHandicapClass(match.wdl.hhad.handicap)">{{ formatHandicap(match.wdl.hhad.handicap) }}</text>
-                    <view class="odds-items">
+                    <!-- 让球胜平负 -->
+                    <view class="odds-row" v-if="match.wdl?.hhad">
+                      <text class="handicap" :class="getHandicapClass(match.wdl.hhad.handicap)">{{ formatHandicap(match.wdl.hhad.handicap) }}</text>
                       <view class="odds-item">
                         <text class="label">胜</text>
                         <text class="value">{{ formatOdds(match.wdl.hhad.win_odds) }}</text>
@@ -72,11 +81,11 @@
                       </view>
                     </view>
                   </view>
-                </view>
 
-                <view class="row-footer">
-                  <text class="link-index">指数</text>
-                  <text class="link-more" @tap="goPlays(match.matchId, match)">更多玩法</text>
+                  <view class="side-links">
+                    <text class="link-index">指数</text>
+                    <text class="link-more" @tap="goPlays(match.matchId, match)">更多玩法</text>
+                  </view>
                 </view>
               </view>
             </view>
@@ -236,27 +245,31 @@ function handleScrollLower() {
 }
 
 .day-section {
-  margin-bottom: 20rpx;
+  margin-bottom: 16rpx;
 }
 
 .day-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 20rpx 24rpx 16rpx;
+  padding: 16rpx 24rpx 12rpx;
   background: #f5f6f8;
+  letter-spacing: 0.03em;
 }
 
 .day-title {
-  font-size: 24rpx;
+  font-size: 22rpx;
   color: #666;
+  line-height: 1.6;
 
   .count {
     color: #f43f5e;
+    font-weight: 500;
   }
 
   .tip {
     color: #999;
+    font-size: 20rpx;
   }
 }
 
@@ -272,6 +285,7 @@ function handleScrollLower() {
 
 .match-wrap {
   background: #fff;
+  padding: 0 24rpx;
 }
 
 .match-row {
@@ -286,25 +300,25 @@ function handleScrollLower() {
 }
 
 .row-left {
-  width: 140rpx;
+  width: 120rpx;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: flex-start;
-  padding: 20rpx 0;
-  gap: 8rpx;
-  border-right: 1px solid #f0f0f0;
+  justify-content: center;
+  padding: 12rpx 0;
+  gap: 12rpx;
+  flex-shrink: 0;
 }
 
 .row-left .code {
-  font-size: 28rpx;
-  font-weight: 500;
-  color: #333;
+  font-size: 22rpx;
+  color: #666;
   white-space: nowrap;
+  line-height: 1.2;
 }
 
 .league {
-  border-radius: 4rpx;
+  border-radius: 6rpx;
   padding: 4rpx 10rpx;
   color: #fff;
   font-size: 20rpx;
@@ -312,147 +326,200 @@ function handleScrollLower() {
   overflow: hidden;
   text-overflow: ellipsis;
   max-width: 100rpx;
+  line-height: 1.3;
 }
 
 .time {
-  font-size: 24rpx;
+  font-size: 22rpx;
   color: #666;
   white-space: nowrap;
+  line-height: 1.2;
 }
 
 .attitude {
-  font-size: 20rpx;
+  font-size: 18rpx;
   color: #666;
-  background: #f5f5f5;
-  padding: 2rpx 8rpx;
-  border-radius: 4rpx;
+  background: #f8f8f8;
+  padding: 3rpx 8rpx;
+  border-radius: 3rpx;
+  line-height: 1.2;
 }
 
 .row-right {
   flex: 1;
   display: flex;
   flex-direction: column;
-  padding: 20rpx 24rpx 20rpx 20rpx;
+  padding: 16rpx 16rpx 16rpx 16rpx;
+  min-width: 0;
 }
 
 .teams-info {
+  margin-bottom: 10rpx;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  margin-bottom: 16rpx;
-  position: relative;
 }
 
-.team-line {
+.teams-container {
   display: flex;
   align-items: center;
-  gap: 6rpx;
+  gap: 4rpx;
+  margin-left: 46rpx;
   flex: 1;
+  max-width: 374rpx;
+  min-width: 0;
+}
+
+.team-name {
+  flex: 1;
+  font-size: 26rpx;
+  font-weight: 400;
+  color: #333;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
   min-width: 0;
 
-  .rank {
-    font-size: 20rpx;
-    color: #999;
-    white-space: nowrap;
-    flex-shrink: 0;
+  &.team-home {
+    text-align: right;
   }
 
-  .name {
-    font-size: 28rpx;
-    font-weight: 500;
-    color: #333;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+  &.team-away {
+    text-align: left;
   }
 }
 
 .vs {
-  font-size: 22rpx;
+  flex: 1;
+  font-size: 18rpx;
   color: #999;
-  padding: 0 16rpx;
-  flex-shrink: 0;
+  font-weight: 400;
+  text-align: center;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+.main-content {
+  display: flex;
+  align-items: flex-start;
+  gap: 12rpx;
 }
 
 .odds-section {
+  flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 12rpx;
+  gap: 10rpx;
+  min-width: 0;
+  max-width: 420rpx;
 }
 
 .odds-row {
   display: flex;
-  align-items: center;
-  gap: 12rpx;
+  align-items: stretch;
+  gap: 4rpx;
 }
 
 .handicap {
-  width: 50rpx;
-  text-align: center;
-  font-size: 24rpx;
+  width: 42rpx;
+  height: 42rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20rpx;
   font-weight: 500;
   flex-shrink: 0;
+  border-radius: 50%;
+  background-color: #f5f5f5;
+  color: #666;
+  position: relative;
+  top: 4rpx;
 
   &.gray {
-    color: #999;
+    color: #666;
+    background-color: #f5f5f5;
   }
 
   &.green {
     color: #22c55e;
+    background-color: #e8f8f0;
   }
 
   &.red {
     color: #f43f5e;
+    background-color: #fee;
   }
 }
 
-.odds-items {
-  flex: 1;
+.side-links {
   display: flex;
+  flex-direction: column;
   gap: 10rpx;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 56rpx;
 }
 
 .odds-item {
   flex: 1;
-  border: 1px solid #e0e0e0;
-  border-radius: 6rpx;
-  padding: 14rpx 10rpx;
+  border: 1px solid #e5e5e5;
+  border-radius: 4rpx;
+  padding: 0 10rpx;
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
-  gap: 6rpx;
+  justify-content: space-between;
   background: #fff;
+  box-sizing: border-box;
+  min-width: 0;
+  height: 60rpx;
 
   &.single-ok {
     border-color: #f43f5e;
+    border-width: 2rpx;
+  }
+
+  &.not-sale {
+    border-color: #e5e5e5;
+    background: #f9f9f9;
+    justify-content: center;
   }
 
   .label {
     font-size: 24rpx;
     color: #333;
+    white-space: nowrap;
+    font-weight: 400;
   }
 
   .value {
     font-size: 22rpx;
-    color: #333;
+    color: #666;
+    white-space: nowrap;
+  }
+
+  .not-sale-text {
+    font-size: 22rpx;
+    color: #999;
+    white-space: nowrap;
   }
 }
 
-.row-footer {
-  display: flex;
-  justify-content: flex-end;
-  align-items: center;
-  gap: 24rpx;
-  margin-top: 16rpx;
-  font-size: 24rpx;
+.link-index {
+  color: #4a90e2;
+  font-size: 22rpx;
+  white-space: nowrap;
+  line-height: 60rpx;
+  text-align: center;
+}
 
-  .link-index {
-    color: #4a90e2;
-  }
-
-  .link-more {
-    color: #4a90e2;
-  }
+.link-more {
+  color: #4a90e2;
+  font-size: 22rpx;
+  line-height: 1.4;
+  text-align: center;
+  word-break: break-all;
+  width: 56rpx;
 }
 
 .state {

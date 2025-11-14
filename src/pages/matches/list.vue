@@ -654,7 +654,7 @@ function pickLeagueColor(league) {
 .odds-item {
   flex: 1;
   border: 1px solid #e5e5e5;
-  border-radius: 4rpx;
+  border-radius: 6rpx;
   padding: 0 10rpx;
   display: flex;
   flex-direction: row;

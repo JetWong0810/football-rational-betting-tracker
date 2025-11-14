@@ -505,6 +505,62 @@ utils/stopLoss	连续亏损次数	风险提示	被 Strategy 调用
 请基于以下蓝图创建 uni-app + Vue3 + Pinia 的前端项目：
 - 页面：home、record、analysis、strategy、settings
 - 组件：BetForm、StatCard、ChartProfit、KellyCalc、FixedRatioCalc、StopLossAlert
-- 数据流参照上述流程图，统计通过 Pinia 共享。
+- 数据流参照上述流程图,统计通过 Pinia 共享。
 - 界面遵循绿金运动风格，使用 ECharts 绘制盈亏图。
 输出：项目结构、页面模板及主要组件示例代码。
+
+---
+
+## 📦 部署指南
+
+### 快速开始
+
+本项目支持部署到 **H5** 和 **微信小程序**，且可完全免费部署！
+
+#### 📚 部署文档
+
+- **[🚀 快速部署指南](./QUICK_DEPLOY.md)** - 15分钟快速上线
+- **[📘 完整部署文档](./DEPLOYMENT.md)** - 详细部署流程和技术文档
+
+#### 🎯 推荐部署方案（完全免费）
+
+| 部署目标 | 推荐平台 | 费用 | 部署时间 |
+|---------|---------|------|---------|
+| 后端API | Render | ✅ 免费 | 5-10分钟 |
+| H5网站 | Vercel | ✅ 免费 | 3-5分钟 |
+| 微信小程序 | 微信公众平台 | ✅ 个人免费 | 5-10分钟 |
+
+#### 🔧 快速构建
+
+```bash
+# 构建所有平台
+./scripts/build-all.sh
+
+# 或单独构建
+npm run build:h5              # H5版本
+npm run build:mp-weixin       # 微信小程序版本
+```
+
+#### 📱 一键部署（H5）
+
+```bash
+# 使用Vercel CLI一键部署H5
+./scripts/deploy-h5.sh
+```
+
+#### ⚙️ 环境配置
+
+部署前需要配置后端API地址：
+
+1. **编辑 `src/utils/http.js`**，更新第10行为你的后端API地址
+2. **或** 在部署平台（Vercel）配置环境变量 `VITE_API_BASE_URL`
+
+#### 🎉 部署后访问
+
+- **H5网站**: `https://your-project.vercel.app`
+- **后端API**: `https://your-api.onrender.com`
+- **微信小程序**: 通过微信搜索或扫码访问
+
+### 详细说明
+
+查看 **[QUICK_DEPLOY.md](./QUICK_DEPLOY.md)** 获取完整的分步部署指南。

@@ -366,7 +366,8 @@ function pickLeagueColor(league) {
 @import "@/uni.scss";
 
 .matches-page {
-  background: #f5f6f8;
+  background: linear-gradient(180deg, #e8f8f5 0%, #f2fbf9 100%);
+  min-height: 100vh;
 }
 
 .list-content {
@@ -382,7 +383,7 @@ function pickLeagueColor(league) {
   justify-content: space-between;
   align-items: center;
   padding: 16rpx 24rpx 12rpx;
-  background: #f5f6f8;
+  background: transparent;
   letter-spacing: 0.03em;
 }
 
@@ -415,6 +416,9 @@ function pickLeagueColor(league) {
 .match-wrap {
   background: #fff;
   padding: 0 24rpx;
+  border-radius: 20rpx;
+  box-shadow: 0 4rpx 12rpx rgba(13, 148, 136, 0.08);
+  overflow: hidden;
 }
 
 .match-row {
@@ -635,20 +639,22 @@ function pickLeagueColor(league) {
 }
 
 .link-index {
-  color: #4a90e2;
+  color: #0d9488;
   font-size: 22rpx;
   white-space: nowrap;
   line-height: 60rpx;
   text-align: center;
+  font-weight: 500;
 }
 
 .link-more {
-  color: #4a90e2;
+  color: #0d9488;
   font-size: 22rpx;
   line-height: 1.4;
   text-align: center;
   word-break: break-all;
   width: 56rpx;
+  font-weight: 500;
 }
 
 .state {

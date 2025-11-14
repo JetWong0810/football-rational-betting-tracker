@@ -50,7 +50,6 @@
       </view>
     </view>
     </scroll-view>
-    <QuickRecordFab />
   </view>
 </template>
 
@@ -60,7 +59,6 @@ import { onShow } from '@dcloudio/uni-app'
 import KellyCalc from '@/components/KellyCalc.vue'
 import FixedRatioCalc from '@/components/FixedRatioCalc.vue'
 import StopLossAlert from '@/components/StopLossAlert.vue'
-import QuickRecordFab from '@/components/QuickRecordFab.vue'
 import { useBetStore } from '@/stores/betStore'
 import { useStatStore } from '@/stores/statStore'
 import { useConfigStore } from '@/stores/configStore'
@@ -115,11 +113,12 @@ onShow(() => {
 .page-wrapper {
   min-height: 100vh;
   position: relative;
-  padding-bottom: 200rpx;
+  padding-bottom: 32rpx;
+  background: linear-gradient(180deg, #e8f8f5 0%, #f2fbf9 100%);
 }
 
 .page {
-  padding: 32rpx;
+  padding: 24rpx;
   box-sizing: border-box;
 }
 
@@ -127,44 +126,70 @@ onShow(() => {
   @include card;
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 24rpx;
+  gap: 20rpx;
+  padding: 20rpx;
 }
 
 .caption {
-  font-size: 26rpx;
-  color: #5c5c5c;
+  font-size: 22rpx;
+  color: #6b7280;
+  margin-bottom: 6rpx;
 }
 
 .balance {
-  font-size: 48rpx;
+  font-size: 36rpx;
   font-weight: 600;
+  color: #0d9488;
 }
 
 .inputs {
-  margin-top: 24rpx;
+  margin-top: 16rpx;
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 24rpx;
+  gap: 16rpx;
 }
 
 .input-item {
   @include card;
   display: flex;
   flex-direction: column;
-  gap: 12rpx;
-}
-
-.input-item input {
-  background: #f1f5f2;
-  border-radius: 12rpx;
+  gap: 8rpx;
   padding: 16rpx;
 }
 
+.input-item text {
+  font-size: 24rpx;
+  color: #374151;
+  font-weight: 500;
+}
+
+.input-item input {
+  background: #f9fafb;
+  border-radius: 10rpx;
+  padding: 12rpx;
+  border: 1px solid rgba(13, 148, 136, 0.15);
+  transition: all 0.3s;
+  font-size: 26rpx;
+}
+
+.input-item input:focus {
+  border-color: #0d9488;
+  background: #ffffff;
+  box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.1);
+}
+
 .section {
-  margin-top: 32rpx;
+  margin-top: 24rpx;
   display: flex;
   flex-direction: column;
-  gap: 24rpx;
+  gap: 16rpx;
+}
+
+.section-title {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #0d9488;
+  margin-bottom: 12rpx;
 }
 
 .recommend {
@@ -172,23 +197,34 @@ onShow(() => {
   text-align: center;
   display: flex;
   flex-direction: column;
-  gap: 12rpx;
+  gap: 10rpx;
+  padding: 20rpx;
 }
 
 .recommend .value {
-  font-size: 56rpx;
+  font-size: 44rpx;
   font-weight: 700;
+  color: #0d9488;
+}
+
+.recommend .desc {
+  font-size: 24rpx;
+  color: #6b7280;
 }
 
 .recommend .risk {
-  padding: 10rpx;
-  border-radius: 12rpx;
-  background: rgba(42, 168, 118, 0.15);
-  color: $frbt-primary;
+  padding: 12rpx;
+  border-radius: 10rpx;
+  background: linear-gradient(135deg, rgba(13, 148, 136, 0.1) 0%, rgba(20, 184, 166, 0.1) 100%);
+  color: #0d9488;
+  font-weight: 500;
+  font-size: 24rpx;
+  line-height: 1.6;
 }
 
 .recommend .risk.danger {
-  background: rgba(233, 79, 55, 0.15);
-  color: $frbt-negative;
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.1) 0%, rgba(220, 38, 38, 0.1) 100%);
+  color: #ef4444;
+  font-weight: 500;
 }
 </style>

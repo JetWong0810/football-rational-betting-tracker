@@ -69,17 +69,19 @@ onBeforeUnmount(() => {
 
 .chart-card {
   @include card;
-  min-height: 360rpx;
+  min-height: 320rpx;
+  padding: 20rpx;
 }
 
 .chart {
   width: 100%;
-  height: 320rpx;
+  height: 280rpx;
 }
 
 .empty {
   text-align: center;
   padding: 80rpx 0;
-  color: #9aa0a6;
+  color: #9ca3af;
+  font-size: 26rpx;
 }
 </style>

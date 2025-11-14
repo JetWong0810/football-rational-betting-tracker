@@ -46,18 +46,27 @@ const weekList = computed(() => {
 @import '@/uni.scss';
 
 .page {
-  padding: 32rpx;
+  padding: 24rpx;
   box-sizing: border-box;
+  min-height: 100vh;
+  background: linear-gradient(180deg, #e8f8f5 0%, #f2fbf9 100%);
 }
 
 .section {
-  margin-bottom: 48rpx;
+  margin-bottom: 32rpx;
+}
+
+.section-title {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #0d9488;
+  margin-bottom: 16rpx;
 }
 
 .weekly {
   display: flex;
   flex-direction: column;
-  gap: 16rpx;
+  gap: 12rpx;
 }
 
 .weekly-row {
@@ -65,14 +74,34 @@ const weekList = computed(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  padding: 16rpx 20rpx;
 }
 
-.meta.win { color: $frbt-positive; }
-.meta.lose { color: $frbt-negative; }
+.week {
+  font-size: 26rpx;
+  font-weight: 600;
+  color: #111827;
+}
+
+.meta {
+  font-size: 24rpx;
+  color: #6b7280;
+}
+
+.meta.win { 
+  color: $frbt-positive;
+  font-weight: 500;
+}
+
+.meta.lose { 
+  color: $frbt-negative;
+  font-weight: 500;
+}
 
 .empty {
   text-align: center;
-  padding: 80rpx 0;
-  color: #9aa0a6;
+  padding: 60rpx 0;
+  color: #9ca3af;
+  font-size: 26rpx;
 }
 </style>

@@ -35,28 +35,35 @@ const formattedBankroll = computed(() => formatCurrency(props.bankroll))
 
 .calc-card {
   @include card;
+  padding: 20rpx;
 }
 
 .calc-header {
   @extend .flex-between;
+  margin-bottom: 12rpx;
 }
 
 .title {
-  font-size: 30rpx;
+  font-size: 26rpx;
   font-weight: 600;
+  color: #111827;
 }
 
 .tag {
-  font-size: 24rpx;
+  font-size: 22rpx;
   color: $frbt-secondary;
+  font-weight: 500;
 }
 
 .value {
-  font-size: 50rpx;
-  margin: 20rpx 0;
+  font-size: 40rpx;
+  font-weight: 700;
+  color: #0d9488;
+  margin: 8rpx 0;
 }
 
 .meta {
-  color: rgba(28, 28, 28, 0.7);
+  font-size: 24rpx;
+  color: #6b7280;
 }
 </style>

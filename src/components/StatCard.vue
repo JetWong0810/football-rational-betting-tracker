@@ -30,21 +30,27 @@ const props = defineProps({
 .stat-card {
   @include card;
   min-width: 260rpx;
+  padding: 18rpx;
 }
 
 .title {
-  font-size: 26rpx;
-  color: rgba(28, 28, 28, 0.7);
+  font-size: 24rpx;
+  color: #6b7280;
+  font-weight: 500;
+  margin-bottom: 8rpx;
 }
 
 .value {
-  font-size: 48rpx;
+  font-size: 36rpx;
   font-weight: 600;
-  margin: 12rpx 0;
+  margin: 8rpx 0;
+  color: #0d9488;
 }
 
 .subtitle {
-  font-size: 24rpx;
+  font-size: 22rpx;
+  color: #9ca3af;
+  line-height: 1.4;
 }
 
 .subtitle.positive {

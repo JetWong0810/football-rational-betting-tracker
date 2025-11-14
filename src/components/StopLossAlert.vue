@@ -49,7 +49,8 @@ const shouldPause = computed(() => status.value.shouldPause)
 
 .alert {
   @include card;
-  border-left: 8rpx solid $frbt-primary;
+  border-left: 6rpx solid $frbt-primary;
+  padding: 20rpx;
 }
 
 .alert.danger {
@@ -58,33 +59,38 @@ const shouldPause = computed(() => status.value.shouldPause)
 
 .header {
   @extend .flex-between;
-  margin-bottom: 16rpx;
+  margin-bottom: 12rpx;
 }
 
 .title {
-  font-size: 30rpx;
+  font-size: 26rpx;
   font-weight: 600;
+  color: #111827;
 }
 
 .tag {
-  font-size: 24rpx;
-  color: rgba(28, 28, 28, 0.6);
+  font-size: 22rpx;
+  color: #9ca3af;
+  font-weight: 500;
 }
 
 .content {
   display: flex;
   flex-direction: column;
-  gap: 8rpx;
-  margin-bottom: 16rpx;
-  color: rgba(28, 28, 28, 0.85);
+  gap: 6rpx;
+  margin-bottom: 12rpx;
+  font-size: 24rpx;
+  color: #374151;
 }
 
 .warnings {
   color: $frbt-negative;
   line-height: 1.6;
+  font-size: 24rpx;
 }
 
 .ok {
   color: $frbt-primary;
+  font-size: 24rpx;
 }
 </style>

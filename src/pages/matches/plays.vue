@@ -141,7 +141,7 @@ function formatHandicap (value) {
 
 .plays-page {
   min-height: 100vh;
-  background: #f4f5f7;
+  background: linear-gradient(180deg, #e8f8f5 0%, #f2fbf9 100%);
 }
 
 .match-hero {
@@ -169,7 +169,12 @@ function formatHandicap (value) {
 }
 
 .single-tag {
-  color: #059669;
+  background: linear-gradient(135deg, #0d9488 0%, #14b8a6 100%);
+  color: #ffffff;
+  padding: 8rpx 20rpx;
+  border-radius: 12rpx;
+  font-size: 24rpx;
+  font-weight: 600;
 }
 
 .content {
@@ -197,12 +202,33 @@ function formatHandicap (value) {
 .grid .cell {
   background: #f9fafb;
   border-radius: 12rpx;
-  padding: 20rpx 0;
-  text-align: center;
+  padding: 0 12rpx;
   border: 1px solid #e5e7eb;
   display: flex;
-  flex-direction: column;
-  gap: 8rpx;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  box-sizing: border-box;
+  min-width: 0;
+  height: 60rpx;
+  
+  text {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  
+  text:first-child {
+    font-size: 24rpx;
+    color: #333;
+    font-weight: 500;
+  }
+  
+  text:last-child {
+    font-size: 22rpx;
+    color: #666;
+    font-weight: 400;
+  }
 }
 
 .grid.ttg {

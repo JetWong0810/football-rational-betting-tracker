@@ -66,7 +66,24 @@ function renderChart () {
         smooth: true,
         data: balance,
         lineStyle: {
-          color: '#1E5631'
+          color: '#0d9488',
+          width: 3
+        },
+        itemStyle: {
+          color: '#0d9488'
+        },
+        areaStyle: {
+          color: {
+            type: 'linear',
+            x: 0,
+            y: 0,
+            x2: 0,
+            y2: 1,
+            colorStops: [
+              { offset: 0, color: 'rgba(13, 148, 136, 0.3)' },
+              { offset: 1, color: 'rgba(13, 148, 136, 0.05)' }
+            ]
+          }
         }
       },
       {
@@ -74,7 +91,7 @@ function renderChart () {
         type: 'bar',
         data: profit,
         itemStyle: {
-          color: params => params.value >= 0 ? '#2AA876' : '#E94F37'
+          color: params => params.value >= 0 ? '#10b981' : '#ef4444'
         }
       }
     ]
@@ -102,17 +119,19 @@ onBeforeUnmount(() => {
 
 .chart-card {
   @include card;
-  min-height: 400rpx;
+  min-height: 360rpx;
+  padding: 20rpx;
 }
 
 .chart {
   width: 100%;
-  height: 380rpx;
+  height: 320rpx;
 }
 
 .empty {
   text-align: center;
-  padding: 120rpx 0;
-  color: #9aa0a6;
+  padding: 100rpx 0;
+  color: #9ca3af;
+  font-size: 26rpx;
 }
 </style>

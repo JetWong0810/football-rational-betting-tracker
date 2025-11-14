@@ -3,19 +3,23 @@
     <mescroll-body ref="mescrollRef" :down="downOption" :up="upOption" :bottombar="false" @init="mescrollInit" @down="downCallback" @up="upCallback">
       <view class="list-content">
         <view v-if="visibleMatches.length > 0">
-          <view class="day-section" v-for="group in groupedMatches" :key="group.date">
-            <view class="day-header" @tap="toggleGroup(group.date)">
-              <text class="day-title"
-                >{{ formatDateLabel(group.date) }} 共<text class="count">{{ group.matches.length }}</text
-                >场 <text class="tip">(红框选项可投单关)</text></text
-              >
-              <text class="arrow" :class="{ collapsed: collapsedMap[group.date] }">▲</text>
+          <view class="day-section" v-for="group in groupedMatches" :key="group.key">
+            <view class="day-header" @tap="toggleGroup(group.key)">
+              <view class="day-title">
+                <text class="date">{{ formatDateLabel(group.displayDate) }}</text>
+                <text class="count-wrap"
+                  >共<text class="count">{{ group.matches.length }}</text
+                  >场</text
+                >
+                <text class="tip">(红框选项可投单关)</text>
+              </view>
+              <text class="arrow" :class="{ collapsed: collapsedMap[group.key] }">▲</text>
             </view>
 
-            <view class="match-wrap" v-show="!collapsedMap[group.date]">
+            <view class="match-wrap" v-show="!collapsedMap[group.key]">
               <view class="match-row" v-for="(match, index) in group.matches" :key="match.matchId">
                 <view class="row-left">
-                  <text class="code">{{ displayMatchCode(match, group.date, index + 1) }}</text>
+                  <text class="code">{{ displayMatchCode(match, group.displayDate, index + 1) }}</text>
                   <text class="league" :style="{ backgroundColor: pickLeagueColor(match.league) }">{{ truncateText(match.league, 3) }}</text>
                   <text class="time">{{ formatTime(match) }}</text>
                   <text class="attitude" v-if="match.notice">态度</text>
@@ -185,22 +189,33 @@ const upOption = {
 const visibleMatches = computed(() => matches.value.filter((match) => !isFinishedMatch(match?.status)));
 
 const groupedMatches = computed(() => {
-  const groups = visibleMatches.value.reduce((acc, match) => {
-    const key = match.matchDate || "待定";
+  const bucket = visibleMatches.value.reduce((acc, match) => {
+    const key = extractIssueKey(match);
     if (!acc[key]) acc[key] = [];
     acc[key].push(match);
     return acc;
   }, {});
-  return Object.keys(groups)
-    .sort((a, b) => {
-      if (a === "待定") return 1;
-      if (b === "待定") return -1;
-      return dayjs(a).valueOf() - dayjs(b).valueOf();
+
+  return Object.keys(bucket)
+    .map((key) => {
+      const matchesInGroup = bucket[key].slice().sort(sortMatchesWithinDay);
+      const issueDate = deriveIssueDate(key) || guessGroupDate(matchesInGroup);
+      const sortValue = issueDate ? dayjs(issueDate).valueOf() : Number.MAX_SAFE_INTEGER;
+      return {
+        key,
+        matches: matchesInGroup,
+        displayDate: issueDate || "待定",
+        sortValue,
+      };
     })
-    .map((date) => ({
-      date,
-      matches: groups[date].slice().sort(sortMatchesWithinDay),
-    }));
+    .sort((a, b) => {
+      if (a.sortValue !== b.sortValue) {
+        return a.sortValue - b.sortValue;
+      }
+      if (a.key === "待定") return 1;
+      if (b.key === "待定") return -1;
+      return a.key.localeCompare(b.key);
+    });
 });
 
 onShow(() => {
@@ -229,6 +244,41 @@ function goPlays(matchId, match) {
 
 function toggleGroup(date) {
   collapsedMap[date] = !collapsedMap[date];
+}
+
+function extractIssueKey(match) {
+  if (match?.matchNumber) {
+    return String(match.matchNumber);
+  }
+  const digits = match?.matchCode?.replace(/\D/g, "");
+  if (digits && digits.length === 6) {
+    return digits;
+  }
+  return match?.matchDate || "待定";
+}
+
+function deriveIssueDate(issueKey) {
+  const key = String(issueKey || "").trim();
+  if (/^\d{6}$/.test(key)) {
+    const year = 2000 + Number(key.slice(0, 2));
+    const month = key.slice(2, 4);
+    const day = key.slice(4, 6);
+    const dateStr = `${year}-${month}-${day}`;
+    return dayjs(dateStr).isValid() ? dateStr : null;
+  }
+  if (dayjs(key).isValid()) {
+    return dayjs(key).format("YYYY-MM-DD");
+  }
+  return null;
+}
+
+function guessGroupDate(matches) {
+  for (const match of matches) {
+    if (match?.matchDate && dayjs(match.matchDate).isValid()) {
+      return match.matchDate;
+    }
+  }
+  return null;
 }
 
 function formatOdds(value) {
@@ -374,10 +424,6 @@ function pickLeagueColor(league) {
   padding-bottom: 0rpx;
 }
 
-.day-section {
-  margin-bottom: 16rpx;
-}
-
 .day-header {
   display: flex;
   justify-content: space-between;
@@ -391,6 +437,18 @@ function pickLeagueColor(league) {
   font-size: 22rpx;
   color: #666;
   line-height: 1.6;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10rpx;
+
+  .date {
+    font-weight: 500;
+  }
+
+  .count-wrap {
+    color: #666;
+  }
 
   .count {
     color: #f43f5e;
@@ -608,8 +666,8 @@ function pickLeagueColor(league) {
   height: 60rpx;
 
   &.single-ok {
-    border-color: #f43f5e;
-    border-width: 2rpx;
+    border-color: #fd7088;
+    border-width: 1rpx;
   }
 
   &.not-sale {

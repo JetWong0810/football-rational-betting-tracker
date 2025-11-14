@@ -44,6 +44,7 @@ def format_match(row: Dict[str, Any]) -> Dict[str, Any]:
             "rank": row.get("away_team_rank"),
         },
         "isSingle": bool(row.get("is_single")),
+        "isLatestIssue": bool(row.get("is_latest_issue")),
         "status": row.get("match_status"),
         "notice": row.get("notice"),
         "oddsUpdateTime": row.get("odds_update_time"),

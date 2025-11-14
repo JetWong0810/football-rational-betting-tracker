@@ -16,25 +16,25 @@
         <view v-if="plays.had" class="odds-block">
           <view class="title">胜平负</view>
           <view class="matrix">
-            <view class="cell"><text>胜</text><text>{{ formatOdds(plays.had?.win_odds) }}</text></view>
-            <view class="cell"><text>平</text><text>{{ formatOdds(plays.had?.draw_odds) }}</text></view>
-            <view class="cell"><text>负</text><text>{{ formatOdds(plays.had?.lose_odds) }}</text></view>
+            <view class="cell" :class="{ 'single-ok': hadSingle }"><text>胜</text><text>{{ formatOdds(plays.had?.win_odds) }}</text></view>
+            <view class="cell" :class="{ 'single-ok': hadSingle }"><text>平</text><text>{{ formatOdds(plays.had?.draw_odds) }}</text></view>
+            <view class="cell" :class="{ 'single-ok': hadSingle }"><text>负</text><text>{{ formatOdds(plays.had?.lose_odds) }}</text></view>
           </view>
         </view>
 
         <view v-if="plays.hhad" class="odds-block">
           <view class="title">让球胜平负 ({{ formatHandicap(plays.hhad?.handicap) }})</view>
           <view class="matrix">
-            <view class="cell"><text>胜</text><text>{{ formatOdds(plays.hhad?.win_odds) }}</text></view>
-            <view class="cell"><text>平</text><text>{{ formatOdds(plays.hhad?.draw_odds) }}</text></view>
-            <view class="cell"><text>负</text><text>{{ formatOdds(plays.hhad?.lose_odds) }}</text></view>
+            <view class="cell" :class="{ 'single-ok': hhadSingle }"><text>胜</text><text>{{ formatOdds(plays.hhad?.win_odds) }}</text></view>
+            <view class="cell" :class="{ 'single-ok': hhadSingle }"><text>平</text><text>{{ formatOdds(plays.hhad?.draw_odds) }}</text></view>
+            <view class="cell" :class="{ 'single-ok': hhadSingle }"><text>负</text><text>{{ formatOdds(plays.hhad?.lose_odds) }}</text></view>
           </view>
         </view>
 
         <view v-if="ttgList.length" class="odds-block">
           <view class="title">总进球数</view>
           <view class="grid ttg">
-            <view v-for="goal in ttgList" :key="goal.goal_range" class="cell">
+            <view v-for="goal in ttgList" :key="goal.goal_range" class="cell single-ok">
               <text>{{ goal.goal_range }}</text>
               <text>{{ formatOdds(goal.odds) }}</text>
             </view>
@@ -44,7 +44,7 @@
         <view v-if="hafuList.length" class="odds-block">
           <view class="title">半全场</view>
           <view class="grid hafu">
-            <view v-for="item in hafuList" :key="item.result_label" class="cell">
+            <view v-for="item in hafuList" :key="item.result_label" class="cell single-ok">
               <text>{{ item.result_label }}</text>
               <text>{{ formatOdds(item.odds) }}</text>
             </view>
@@ -56,7 +56,7 @@
           <view class="score-group" v-for="group in scoreGroups" :key="group.label">
             <view class="group-title">{{ group.label }}</view>
             <view class="grid scores">
-              <view v-for="item in group.items" :key="item.score_label" class="cell">
+              <view v-for="item in group.items" :key="item.score_label" class="cell single-ok">
                 <text>{{ item.score_label }}</text>
                 <text>{{ formatOdds(item.odds) }}</text>
               </view>
@@ -94,6 +94,8 @@ const error = computed(() => matchStore.playsError)
 const playsData = computed(() => matchStore.playsData || null)
 const matchInfo = computed(() => playsData.value?.match || null)
 const plays = computed(() => playsData.value?.plays || {})
+const hadSingle = computed(() => isSingleOdds(plays.value?.had, matchInfo.value))
+const hhadSingle = computed(() => isSingleOdds(plays.value?.hhad, matchInfo.value))
 
 const scoreGroups = computed(() => {
   const list = plays.value.crs || []
@@ -132,6 +134,17 @@ function formatOdds (value) {
 function formatHandicap (value) {
   if (value === undefined || value === null) return 0
   return value > 0 ? `+${value}` : value
+}
+
+function isSingleOdds (oddsItem, match) {
+  if (oddsItem && oddsItem.is_single !== undefined && oddsItem.is_single !== null) {
+    const flag = Number(oddsItem.is_single)
+    if (!Number.isNaN(flag)) {
+      return flag === 1
+    }
+    return Boolean(oddsItem.is_single)
+  }
+  return Boolean(match?.isSingle)
 }
 </script>
 
@@ -228,6 +241,11 @@ function formatHandicap (value) {
     font-size: 22rpx;
     color: #666;
     font-weight: 400;
+  }
+
+  &.single-ok {
+    border-color: #fd7088;
+    border-width: 1rpx;
   }
 }
 

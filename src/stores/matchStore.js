@@ -35,6 +35,7 @@ export const useMatchStore = defineStore("matchStore", {
           method: "GET",
           data: {
             league: this.filterLeague || undefined,
+            page_size: 50,
           },
         });
         // 接口一次性返回所有数据

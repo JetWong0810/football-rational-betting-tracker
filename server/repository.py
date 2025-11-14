@@ -158,6 +158,12 @@ class OddsRepository:
         with get_db() as conn:
             update_sync_status(conn, total_matches, total_odds)
 
+    def get_latest_issue(self) -> Optional[str]:
+        with get_db() as conn:
+            cur = conn.execute("SELECT MAX(match_number) FROM matches")
+            row = cur.fetchone()
+            return row[0] if row and row[0] else None
+
     # Query helpers for API
     def list_matches(
         self,
@@ -176,15 +182,8 @@ class OddsRepository:
         if league:
             where.append("league_name = ?")
             params.append(league)
+        latest_issue = self.get_latest_issue()
         if not date:
-            latest_issue = None
-            with get_db() as conn:
-                cur = conn.execute("SELECT MAX(match_number) FROM matches")
-                row = cur.fetchone()
-                latest_issue = row[0] if row and row[0] else None
-            if latest_issue:
-                where.append("match_number = ?")
-                params.append(latest_issue)
             today = datetime.now().strftime("%Y-%m-%d")
             where.append("(match_date IS NULL OR match_date >= ?)")
             params.append(today)
@@ -210,13 +209,25 @@ class OddsRepository:
         odds_map = self.fetch_wdl_for_matches(match_ids)
         for row in rows:
             row["wdl_odds"] = odds_map.get(row["match_id"], {})
+            if latest_issue:
+                row["is_latest_issue"] = 1 if row.get("match_number") == latest_issue else 0
+            else:
+                row["is_latest_issue"] = 0
         return {"items": rows, "total": total}
 
     def get_match(self, match_id: str) -> Optional[Dict[str, Any]]:
+        latest_issue = self.get_latest_issue()
         with get_db() as conn:
             cur = conn.execute("SELECT * FROM matches WHERE match_id = ?", (match_id,))
             row = cur.fetchone()
-            return dict(row) if row else None
+            if not row:
+                return None
+            data = dict(row)
+            if latest_issue:
+                data["is_latest_issue"] = 1 if data.get("match_number") == latest_issue else 0
+            else:
+                data["is_latest_issue"] = 0
+            return data
 
     def get_wdl_odds(self, match_id: str) -> Dict[str, Dict[str, Any]]:
         with get_db() as conn:

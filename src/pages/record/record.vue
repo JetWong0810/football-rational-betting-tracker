@@ -10,9 +10,6 @@
           <text class="title">投注记录</text>
         </view>
         <view class="header-btns">
-          <button class="mock-btn" @tap="generateMockData">
-            <text class="btn-text">测试数据</text>
-          </button>
           <button class="add-btn" @tap="showFormDialog">
             <text class="add-icon">+</text>
             <text class="btn-text">新增</text>
@@ -64,25 +61,29 @@
               <view class="header-left">
                 <view class="badge-row">
                   <view class="badge" :class="bet.legs?.length > 1 ? 'parlay' : 'single'">
-                    {{ bet.legs?.length > 1 ? "串关" : "单关" }}
+                    {{ bet.legs?.length > 1 ? getParlayTypeLabel(bet) : "单关" }}
                   </view>
-                  <text v-if="bet.legs?.length > 1" class="league-text"> {{ bet.legs.length }}场 </text>
-                  <text v-else class="league-text">
-                    {{ bet.legs?.[0]?.league || "未知联赛" }}
+                  <text class="league-text">
+                    {{ bet.legs?.length > 1 ? `共${bet.legs.length}场` : bet.legs?.[0]?.league || "未知联赛" }}
                   </text>
                 </view>
                 <view class="match-title">{{ primaryMatch(bet) }}</view>
               </view>
               <view class="header-right">
                 <view class="status-actions">
-                  <view class="result-badge" :class="bet.result">
-                    {{ resultText(bet) }}
+                  <view class="badges-row">
+                    <view class="status-badge" :class="bet.status">
+                      {{ statusText(bet) }}
+                    </view>
+                    <view class="result-badge" :class="bet.result" v-if="bet.status === 'settled'">
+                      {{ resultText(bet) }}
+                    </view>
                   </view>
                   <view class="action-btns">
-                    <button class="icon-btn edit" @tap.stop="() => startEdit(bet)">
+                    <button v-if="bet.status !== 'saved' && bet.status !== 'settled'" class="icon-btn edit" @tap.stop="() => startEdit(bet)">
                       <text class="btn-icon">✎</text>
                     </button>
-                    <button class="icon-btn delete" @tap.stop="() => removeBet(bet.id)">
+                    <button v-if="bet.status !== 'settled'" class="icon-btn delete" @tap.stop="() => removeBet(bet.id)">
                       <text class="btn-icon">×</text>
                     </button>
                   </view>
@@ -132,12 +133,17 @@
           <button class="close-btn" @tap="closeDialog">×</button>
         </view>
         <scroll-view class="dialog-body" scroll-y>
-          <BetForm ref="betFormRef" :editing-bet="editingBet" :hide-submit-button="true" @submit="handleSubmit" @cancelEdit="cancelEdit" />
+          <BetForm ref="betFormRef" :editing-bet="editingBet" :is-editing-betting="isEditingBetting" :hide-submit-button="true" @submit="handleSubmit" @cancelEdit="cancelEdit" />
         </scroll-view>
         <view class="dialog-footer">
-          <button class="submit-btn" @tap="submitForm">
-            {{ editingBet ? "更新记录" : "保存记录" }}
-          </button>
+          <view v-if="isEditingBetting" class="footer-buttons">
+            <button class="cancel-footer-btn" @tap="closeDialog">取消</button>
+            <button class="settle-btn" @tap="handleSettle">结算</button>
+          </view>
+          <view v-else class="footer-buttons">
+            <button class="save-footer-btn" @tap="() => submitFormWithStatus('saved')">保存</button>
+            <button class="bet-footer-btn" @tap="() => submitFormWithStatus('betting')">投注</button>
+          </view>
         </view>
       </view>
     </view>
@@ -156,6 +162,11 @@ const activeTab = ref("all");
 const showDialog = ref(false);
 const betFormRef = ref(null);
 
+// 判断是否在编辑"投注中"的记录
+const isEditingBetting = computed(() => {
+  return editingBet.value && editingBet.value.status === "betting";
+});
+
 // 计算总投注金额
 const totalAmount = computed(() => {
   return betStore.bets.reduce((sum, bet) => sum + (Number(bet.stake) || 0), 0);
@@ -172,30 +183,57 @@ const displayedBets = computed(() => {
 function showFormDialog() {
   editingBet.value = null;
   showDialog.value = true;
+  // 打开新增弹窗时，确保表单是干净的
+  setTimeout(() => {
+    if (betFormRef.value && betFormRef.value.resetForm) {
+      betFormRef.value.resetForm();
+    }
+  }, 50);
 }
 
 function closeDialog() {
   showDialog.value = false;
   editingBet.value = null;
+  // 延迟重置表单，确保动画完成后再清空
+  setTimeout(() => {
+    if (betFormRef.value && betFormRef.value.resetForm) {
+      betFormRef.value.resetForm();
+    }
+  }, 300);
 }
 
-function submitForm() {
-  // 触发 BetForm 的提交方法
-  if (betFormRef.value && betFormRef.value.handleSubmit) {
-    betFormRef.value.handleSubmit();
+function submitFormWithStatus(status) {
+  // 触发 BetForm 的提交方法，传递状态
+  if (betFormRef.value && betFormRef.value.handleSubmitWithStatus) {
+    betFormRef.value.handleSubmitWithStatus(status);
   }
 }
 
 function handleSubmit(payload) {
-  if (payload.id) {
-    betStore.updateBet(payload.id, payload);
-    editingBet.value = null;
-    uni.showToast({ title: "记录已更新", icon: "success" });
-  } else {
-    betStore.addBet(payload);
-    uni.showToast({ title: "记录已保存", icon: "success" });
+  try {
+    if (payload.id) {
+      betStore.updateBet(payload.id, payload);
+      editingBet.value = null;
+      uni.showToast({ title: "记录已更新", icon: "success" });
+    } else {
+      betStore.addBet(payload);
+      const statusText = payload.status === "betting" ? "投注成功" : "保存成功";
+      uni.showToast({ title: statusText, icon: "success" });
+    }
+    closeDialog(); // closeDialog 中会自动重置表单
+  } catch (error) {
+    uni.showToast({ title: error.message || "操作失败", icon: "none" });
   }
-  closeDialog();
+}
+
+// 处理结算
+function handleSettle() {
+  if (!editingBet.value) return;
+
+  // 触发表单提交，将状态改为settled
+  if (betFormRef.value && betFormRef.value.handleSubmitWithStatus) {
+    betFormRef.value.handleSubmitWithStatus("settled");
+  }
 }
 
 function removeBet(id) {
@@ -215,6 +253,17 @@ function removeBet(id) {
 }
 
 function startEdit(bet) {
+  // 已保存状态不允许编辑
+  if (bet.status === "saved") {
+    uni.showToast({ title: "已保存的记录不可编辑，只能删除", icon: "none" });
+    return;
+  }
+  // 已结算状态不允许编辑
+  if (bet.status === "settled") {
+    uni.showToast({ title: "已结算的记录不可编辑", icon: "none" });
+    return;
+  }
+
   editingBet.value = bet;
   showDialog.value = true;
 }
@@ -231,13 +280,22 @@ function formatDate(value) {
 
 function resultText(bet) {
   const dict = {
-    win: "赢",
-    lose: "输",
+    win: "全赢",
+    lose: "全输",
     pending: "进行中",
-    "half-win": "半赢",
-    "half-lose": "半输",
+    "half-win": "赢半",
+    "half-lose": "输半",
   };
   return dict[bet.result] || "未知";
+}
+
+function statusText(bet) {
+  const dict = {
+    saved: "已保存",
+    betting: "投注中",
+    settled: "已结算",
+  };
+  return dict[bet.status] || "未知";
 }
 
 function primaryMatch(bet) {
@@ -263,70 +321,17 @@ function formatSelection(leg) {
   return "投注方向";
 }
 
-// 生成Mock数据用于测试
-function generateMockData() {
-  // 清空现有数据
-  betStore.clearBets();
+function getParlayTypeLabel(bet) {
+  if (!bet.legs || bet.legs.length < 2) return "单关";
 
-  // 第一条记录：单关 - 曼城 vs 利物浦
-  const bet1 = {
-    wagerType: "single",
-    stake: 100,
-    odds: 2.15,
-    result: "pending",
-    betTime: "2024-01-20 20:00",
-    legs: [
-      {
-        id: "mock-leg-1",
-        homeTeam: "曼城",
-        awayTeam: "利物浦",
-        league: "英超",
-        matchTime: "2024-01-20 20:00",
-        betType: "主胜",
-        selection: "主胜",
-        odds: 2.15,
-      },
-    ],
-  };
+  // 如果有保存的parlayType，使用它
+  if (bet.parlayType) {
+    const [m, n] = bet.parlayType.split("_");
+    return `${m}串${n}`;
+  }
 
-  // 第二条记录：串关 - 巴萨 vs 皇马 + 拜仁 vs 多特
-  const bet2 = {
-    wagerType: "parlay",
-    stake: 200,
-    odds: 1.85,
-    result: "pending",
-    betTime: "2024-01-21 22:00",
-    legs: [
-      {
-        id: "mock-leg-2-1",
-        homeTeam: "巴萨",
-        awayTeam: "皇马",
-        league: "西甲",
-        matchTime: "2024-01-21 22:00",
-        betType: "大2.5",
-        selection: "大2.5",
-        odds: 1.85,
-      },
-      {
-        id: "mock-leg-2-2",
-        homeTeam: "拜仁",
-        awayTeam: "多特",
-        league: "德甲",
-        matchTime: "2024-01-21 22:00",
-        betType: "主胜",
-        selection: "主胜",
-        odds: 1.65,
-      },
-    ],
-  };
-
-  betStore.addBet(bet1);
-  betStore.addBet(bet2);
-
-  uni.showToast({
-    title: "Mock数据已生成",
-    icon: "success",
-  });
+  // 否则默认显示N串1
+  return `${bet.legs.length}串1`;
 }
 </script>
 
@@ -396,27 +401,6 @@ function generateMockData() {
   gap: 10rpx;
   flex-shrink: 0;
   margin-left: 16rpx;
-}
-
-.mock-btn {
-  background: rgba(255, 255, 255, 0.15);
-  color: #ffffff;
-  border-radius: 12rpx;
-  padding: 6rpx 12rpx;
-  font-size: 22rpx;
-  font-weight: 500;
-  border: 1rpx solid rgba(255, 255, 255, 0.25);
-  flex-shrink: 0;
-  transition: all 0.2s ease;
-  height: 52rpx;
-  line-height: 1;
-  display: flex;
-  align-items: center;
-}
-
-.mock-btn:active {
-  transform: scale(0.98);
-  background: rgba(255, 255, 255, 0.25);
 }
 
 .add-btn {
@@ -786,19 +770,22 @@ function generateMockData() {
 .amount-section {
   text-align: right;
   display: flex;
-  flex-direction: column;
-  gap: 4rpx;
+  flex-direction: row;
+  align-items: baseline;
+  gap: 8rpx;
 }
 
 .amount-label {
-  font-size: 20rpx;
-  color: #9ca3af;
+  font-size: 24rpx;
+  color: #6b7280;
+  white-space: nowrap;
 }
 
 .amount-value {
   font-size: 32rpx;
   font-weight: 700;
   color: #0d9488;
+  white-space: nowrap;
 }
 
 /* 结果徽章 */
@@ -831,6 +818,38 @@ function generateMockData() {
 
 .result-badge.half-lose {
   background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+}
+
+/* 徽章容器 */
+.badges-row {
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+  margin-bottom: 8rpx;
+}
+
+/* 状态徽章 */
+.status-badge {
+  display: inline-flex;
+  padding: 4rpx 12rpx;
+  border-radius: 8rpx;
+  font-size: 20rpx;
+  font-weight: 600;
+  color: #ffffff;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.status-badge.saved {
+  background: linear-gradient(135deg, #94a3b8 0%, #64748b 100%);
+}
+
+.status-badge.betting {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+}
+
+.status-badge.settled {
+  background: linear-gradient(135deg, #0d9488 0%, #14b8a6 100%);
 }
 
 /* ========== 弹窗样式 ========== */
@@ -926,22 +945,62 @@ function generateMockData() {
   box-sizing: border-box;
 }
 
-.submit-btn {
+.footer-buttons {
+  display: flex;
+  gap: 12rpx;
   width: 100%;
-  background: linear-gradient(135deg, #0d9488 0%, #14b8a6 100%);
-  color: #ffffff;
-  border-radius: 12rpx;
-  padding: 4rpx 0;
-  font-size: 28rpx;
-  font-weight: 600;
-  border: none;
-  box-shadow: 0 4rpx 16rpx rgba(13, 148, 136, 0.3);
-  transition: all 0.3s;
-  box-sizing: border-box;
+
+  button {
+    flex: 1;
+    height: 72rpx;
+    border-radius: 12rpx;
+    font-size: 26rpx;
+    font-weight: 600;
+    border: none;
+    transition: all 0.2s;
+    box-sizing: border-box;
+  }
 }
 
-.submit-btn:active {
-  transform: translateY(1rpx);
-  box-shadow: 0 2rpx 8rpx rgba(13, 148, 136, 0.3);
+.save-footer-btn {
+  background: #f5f5f5;
+  color: #666;
+
+  &:active {
+    background: #e5e5e5;
+    transform: translateY(1rpx);
+  }
+}
+
+.bet-footer-btn {
+  background: linear-gradient(135deg, #0d9488 0%, #14b8a6 100%);
+  color: #ffffff;
+  box-shadow: 0 4rpx 16rpx rgba(13, 148, 136, 0.3);
+
+  &:active {
+    transform: translateY(1rpx);
+    box-shadow: 0 2rpx 8rpx rgba(13, 148, 136, 0.3);
+  }
+}
+
+.cancel-footer-btn {
+  background: #f5f5f5;
+  color: #666;
+
+  &:active {
+    background: #e5e5e5;
+    transform: translateY(1rpx);
+  }
+}
+
+.settle-btn {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: #ffffff;
+  box-shadow: 0 4rpx 16rpx rgba(16, 185, 129, 0.3);
+
+  &:active {
+    transform: translateY(1rpx);
+    box-shadow: 0 2rpx 8rpx rgba(16, 185, 129, 0.3);
+  }
 }
 </style>

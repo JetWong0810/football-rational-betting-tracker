@@ -15,6 +15,7 @@ const defaultBet = () => ({
   odds: 1.0,
   platform: '',
   result: 'pending',
+  status: 'saved', // saved: 已保存(草稿), betting: 投注中, settled: 已结算
   profit: 0,
   fee: 0,
   betTime: dayjs().format('YYYY-MM-DD HH:mm'),
@@ -28,17 +29,39 @@ export const useBetStore = defineStore('bet', () => {
   const loading = ref(false)
   const snapshots = ref([])
 
-  const totalStake = computed(() => bets.value.reduce((sum, bet) => sum + Number(bet.stake || 0), 0))
-  const totalProfit = computed(() => bets.value.reduce((sum, bet) => sum + Number(bet.profit || 0), 0))
-  const winCount = computed(() => bets.value.filter(bet => bet.result === 'win').length)
-  const loseCount = computed(() => bets.value.filter(bet => bet.result === 'lose').length)
+  // 计算总投注金额（只统计投注中和已结算的）
+  const totalStake = computed(() => 
+    bets.value
+      .filter(bet => bet.status === 'betting' || bet.status === 'settled')
+      .reduce((sum, bet) => sum + Number(bet.stake || 0), 0)
+  )
+  
+  // 计算总盈亏（只统计已结算的）
+  const totalProfit = computed(() => 
+    bets.value
+      .filter(bet => bet.status === 'settled')
+      .reduce((sum, bet) => sum + Number(bet.profit || 0), 0)
+  )
+  
+  // 统计胜负场次（只统计已结算的）
+  const winCount = computed(() => 
+    bets.value.filter(bet => bet.status === 'settled' && bet.result === 'win').length
+  )
+  const loseCount = computed(() => 
+    bets.value.filter(bet => bet.status === 'settled' && bet.result === 'lose').length
+  )
+  
+  // 胜率计算（只统计已结算的）
   const winningRate = computed(() => {
-    if (!bets.value.length) return 0
-    return winCount.value / bets.value.length
+    const settledBets = bets.value.filter(bet => bet.status === 'settled')
+    if (!settledBets.length) return 0
+    return winCount.value / settledBets.length
   })
+  
   const consecutiveLosses = computed(() => {
     let streak = 0
-    for (const bet of bets.value) {
+    const settledBets = bets.value.filter(bet => bet.status === 'settled')
+    for (const bet of settledBets) {
       if (bet.result === 'lose') {
         streak += 1
       } else if (bet.result === 'win') {
@@ -48,9 +71,13 @@ export const useBetStore = defineStore('bet', () => {
     return streak
   })
 
+  // 当前余额 = 初始资金 + 已结算盈亏 - 投注中金额
   const bankroll = computed(() => {
     const configStore = useConfigStore()
-    return Number(configStore.startingCapital) + totalProfit.value
+    const bettingStake = bets.value
+      .filter(bet => bet.status === 'betting')
+      .reduce((sum, bet) => sum + Number(bet.stake || 0), 0)
+    return Number(configStore.startingCapital) + totalProfit.value - bettingStake
   })
 
   function persist () {
@@ -75,7 +102,8 @@ export const useBetStore = defineStore('bet', () => {
     const draft = {
       ...base,
       ...payload,
-      id: payload.id || base.id
+      id: payload.id || base.id,
+      status: payload.status || base.status // 保留传入的status
     }
 
     const normalizedLegs = (() => {
@@ -136,16 +164,21 @@ export const useBetStore = defineStore('bet', () => {
     })()
     draft.wagerType = draft.wagerType || (legsCount > 1 ? 'parlay' : 'single')
 
-    if (draft.result === 'win') {
-      draft.profit = stake * (odds - 1) - fee
-    } else if (draft.result === 'lose') {
-      draft.profit = -stake - fee
-    } else if (draft.result === 'half-win') {
-      draft.profit = (stake * (odds - 1)) / 2 - fee
-    } else if (draft.result === 'half-lose') {
-      draft.profit = -stake / 2 - fee
+    // 只有已结算状态才计算盈亏
+    if (draft.status === 'settled') {
+      if (draft.result === 'win') {
+        draft.profit = stake * (odds - 1) - fee
+      } else if (draft.result === 'lose') {
+        draft.profit = -stake - fee
+      } else if (draft.result === 'half-win') {
+        draft.profit = (stake * (odds - 1)) / 2 - fee
+      } else if (draft.result === 'half-lose') {
+        draft.profit = -stake / 2 - fee
+      } else {
+        draft.profit = 0
+      }
     } else {
-      draft.profit = 0
+      draft.profit = 0 // 未结算的记录盈亏为0
     }
 
     return draft
@@ -166,6 +199,16 @@ export const useBetStore = defineStore('bet', () => {
 
   function addBet (payload) {
     const bet = normalizeBet(payload)
+    
+    // 如果是投注中状态，检查余额是否足够
+    if (bet.status === 'betting') {
+      const configStore = useConfigStore()
+      const currentBalance = bankroll.value
+      if (currentBalance < bet.stake) {
+        throw new Error('账户余额不足')
+      }
+    }
+    
     bets.value = [bet, ...bets.value]
     persist()
     recalculateSnapshots()
@@ -173,6 +216,17 @@ export const useBetStore = defineStore('bet', () => {
   }
 
   function updateBet (id, payload) {
+    const oldBet = bets.value.find(bet => bet.id === id)
+    
+    // 如果从其他状态变为投注中，检查余额
+    if (payload.status === 'betting' && oldBet?.status !== 'betting') {
+      const currentBalance = bankroll.value
+      const stake = Number(payload.stake || oldBet?.stake || 0)
+      if (currentBalance < stake) {
+        throw new Error('账户余额不足')
+      }
+    }
+    
     bets.value = bets.value.map(bet => {
       if (bet.id !== id) return bet
       return normalizeBet({ ...bet, ...payload, id })
@@ -182,9 +236,26 @@ export const useBetStore = defineStore('bet', () => {
   }
 
   function removeBet (id) {
+    // 删除时不需要特殊处理余额，因为计算会自动更新
     bets.value = bets.value.filter(bet => bet.id !== id)
     persist()
     recalculateSnapshots()
+  }
+  
+  // 将投注记录从"投注中"结算
+  function settleBet(id, result) {
+    const bet = bets.value.find(b => b.id === id)
+    if (!bet) {
+      throw new Error('投注记录不存在')
+    }
+    if (bet.status !== 'betting') {
+      throw new Error('只能结算投注中的记录')
+    }
+    
+    updateBet(id, { 
+      status: 'settled',
+      result: result || bet.result
+    })
   }
 
   function clearBets () {
@@ -209,6 +280,7 @@ export const useBetStore = defineStore('bet', () => {
     updateBet,
     removeBet,
     clearBets,
-    recalculateSnapshots
+    recalculateSnapshots,
+    settleBet
   }
 })

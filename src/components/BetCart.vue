@@ -99,14 +99,21 @@
             <text class="error-icon">⚠️</text>
             <text class="error-text">{{ betCart.cannotBetReason }}</text>
           </view>
-          <view class="footer-buttons">
+          <view class="footer-buttons three-buttons">
             <button class="cancel-btn" @tap="showCart = false">取消</button>
             <button 
               class="save-btn" 
               :class="{ disabled: !betCart.canBet }"
-              @tap="handleSave"
+              @tap="() => handleSaveWithStatus('saved')"
             >
-              {{ betCart.canBet ? '保存投注' : '不可投注' }}
+              保存
+            </button>
+            <button 
+              class="bet-btn" 
+              :class="{ disabled: !betCart.canBet }"
+              @tap="() => handleSaveWithStatus('betting')"
+            >
+              投注
             </button>
           </view>
         </view>
@@ -203,7 +210,7 @@ function handleRemove(key) {
   betCart.removeSelection(key)
 }
 
-function handleSave() {
+function handleSaveWithStatus(status) {
   if (!betCart.canBet) {
     uni.showToast({ title: betCart.cannotBetReason || '请完善投注信息', icon: 'none', duration: 2000 })
     return
@@ -215,9 +222,13 @@ function handleSave() {
     return
   }
 
+  // 添加状态
+  record.status = status
+
   try {
     betStore.addBet(record)
-    uni.showToast({ title: '保存成功', icon: 'success' })
+    const successMsg = status === 'betting' ? '投注成功' : '保存成功'
+    uni.showToast({ title: successMsg, icon: 'success' })
     betCart.clearCart()
     showCart.value = false
     
@@ -226,7 +237,7 @@ function handleSave() {
       uni.switchTab({ url: '/pages/record/record' })
     }, 1000)
   } catch (error) {
-    uni.showToast({ title: '保存失败', icon: 'none' })
+    uni.showToast({ title: error.message || '操作失败', icon: 'none' })
     console.error('保存投注失败:', error)
   }
 }
@@ -716,6 +727,12 @@ function handleSave() {
       border: none;
       transition: all 0.2s;
     }
+    
+    &.three-buttons {
+      .cancel-btn {
+        flex: 0.8;
+      }
+    }
 
     .cancel-btn {
       background: #f5f5f5;
@@ -727,8 +744,23 @@ function handleSave() {
     }
 
     .save-btn {
+      background: #94a3b8;
+      color: #fff;
+
+      &:active {
+        background: #64748b;
+      }
+
+      &.disabled {
+        background: #d1d5db;
+        color: #9ca3af;
+      }
+    }
+    
+    .bet-btn {
       background: #0d9488;
       color: #fff;
+      box-shadow: 0 2rpx 8rpx rgba(13, 148, 136, 0.3);
 
       &:active {
         background: #0b8074;
@@ -737,6 +769,7 @@ function handleSave() {
       &.disabled {
         background: #d1d5db;
         color: #9ca3af;
+        box-shadow: none;
       }
     }
   }

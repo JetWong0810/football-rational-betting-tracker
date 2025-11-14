@@ -40,15 +40,36 @@
                       <view class="odds-row">
                         <text class="handicap">0</text>
                         <template v-if="match.wdl?.had">
-                          <view class="odds-item" :class="{ 'single-ok': isSingleFor(match, 'had') }">
+                          <view
+                            class="odds-item"
+                            :class="{
+                              'single-ok': isSingleFor(match, 'had'),
+                              selected: isOddsSelected(match.matchId, 'had', 'win'),
+                            }"
+                            @tap="() => handleSelectOdds(match, 'had', 'win', '胜', match.wdl.had.win_odds)"
+                          >
                             <text class="label">胜</text>
                             <text class="value">{{ formatOdds(match.wdl.had.win_odds) }}</text>
                           </view>
-                          <view class="odds-item" :class="{ 'single-ok': isSingleFor(match, 'had') }">
+                          <view
+                            class="odds-item"
+                            :class="{
+                              'single-ok': isSingleFor(match, 'had'),
+                              selected: isOddsSelected(match.matchId, 'had', 'draw'),
+                            }"
+                            @tap="() => handleSelectOdds(match, 'had', 'draw', '平', match.wdl.had.draw_odds)"
+                          >
                             <text class="label">平</text>
                             <text class="value">{{ formatOdds(match.wdl.had.draw_odds) }}</text>
                           </view>
-                          <view class="odds-item" :class="{ 'single-ok': isSingleFor(match, 'had') }">
+                          <view
+                            class="odds-item"
+                            :class="{
+                              'single-ok': isSingleFor(match, 'had'),
+                              selected: isOddsSelected(match.matchId, 'had', 'lose'),
+                            }"
+                            @tap="() => handleSelectOdds(match, 'had', 'lose', '负', match.wdl.had.lose_odds)"
+                          >
                             <text class="label">负</text>
                             <text class="value">{{ formatOdds(match.wdl.had.lose_odds) }}</text>
                           </view>
@@ -69,15 +90,36 @@
                       <!-- 让球胜平负 -->
                       <view class="odds-row" v-if="match.wdl?.hhad">
                         <text class="handicap" :class="getHandicapClass(match.wdl.hhad.handicap)">{{ formatHandicap(match.wdl.hhad.handicap) }}</text>
-                        <view class="odds-item" :class="{ 'single-ok': isSingleFor(match, 'hhad') }">
+                        <view
+                          class="odds-item"
+                          :class="{
+                            'single-ok': isSingleFor(match, 'hhad'),
+                            selected: isOddsSelected(match.matchId, 'hhad', 'win'),
+                          }"
+                          @tap="() => handleSelectOdds(match, 'hhad', 'win', '胜', match.wdl.hhad.win_odds, match.wdl.hhad.handicap)"
+                        >
                           <text class="label">胜</text>
                           <text class="value">{{ formatOdds(match.wdl.hhad.win_odds) }}</text>
                         </view>
-                        <view class="odds-item" :class="{ 'single-ok': isSingleFor(match, 'hhad') }">
+                        <view
+                          class="odds-item"
+                          :class="{
+                            'single-ok': isSingleFor(match, 'hhad'),
+                            selected: isOddsSelected(match.matchId, 'hhad', 'draw'),
+                          }"
+                          @tap="() => handleSelectOdds(match, 'hhad', 'draw', '平', match.wdl.hhad.draw_odds, match.wdl.hhad.handicap)"
+                        >
                           <text class="label">平</text>
                           <text class="value">{{ formatOdds(match.wdl.hhad.draw_odds) }}</text>
                         </view>
-                        <view class="odds-item" :class="{ 'single-ok': isSingleFor(match, 'hhad') }">
+                        <view
+                          class="odds-item"
+                          :class="{
+                            'single-ok': isSingleFor(match, 'hhad'),
+                            selected: isOddsSelected(match.matchId, 'hhad', 'lose'),
+                          }"
+                          @tap="() => handleSelectOdds(match, 'hhad', 'lose', '负', match.wdl.hhad.lose_odds, match.wdl.hhad.handicap)"
+                        >
                           <text class="label">负</text>
                           <text class="value">{{ formatOdds(match.wdl.hhad.lose_odds) }}</text>
                         </view>
@@ -86,7 +128,7 @@
 
                     <view class="side-links">
                       <text class="link-index">指数</text>
-                      <text class="link-more" @tap="goPlays(match.matchId, match)">更多玩法</text>
+                      <text class="link-more" :class="{ active: hasMatchSelection(match.matchId) }" @tap="goPlays(match.matchId, match)"> 更多玩法 </text>
                     </view>
                   </view>
                 </view>
@@ -96,6 +138,9 @@
         </view>
       </view>
     </mescroll-body>
+
+    <!-- 投注车组件 -->
+    <BetCart />
   </view>
 </template>
 
@@ -104,9 +149,12 @@ import { computed, reactive, ref } from "vue";
 import { onShow, onPageScroll, onReachBottom } from "@dcloudio/uni-app";
 import dayjs from "dayjs";
 import MescrollBody from "mescroll-uni/mescroll-body.vue";
+import BetCart from "@/components/BetCart.vue";
 import { useMatchStore } from "@/stores/matchStore";
+import { useBetCartStore } from "@/stores/betCartStore";
 
 const matchStore = useMatchStore();
+const betCartStore = useBetCartStore();
 const matches = computed(() => matchStore.matches);
 const loading = computed(() => matchStore.loading);
 const collapsedMap = reactive({});
@@ -410,6 +458,53 @@ function pickLeagueColor(league) {
   const seed = league ? league.charCodeAt(0) : 0;
   return palette[seed % palette.length];
 }
+
+// ========== 投注选择相关方法 ==========
+
+/**
+ * 处理赔率选择
+ */
+function handleSelectOdds(match, playType, selection, selectionLabel, odds, handicap = null) {
+  if (!odds || odds === "--") {
+    uni.showToast({ title: "该选项暂未开售", icon: "none" });
+    return;
+  }
+
+  const playNameMap = {
+    had: "胜平负",
+    hhad: "让球胜平负",
+  };
+
+  betCartStore.toggleSelection({
+    matchId: match.matchId,
+    homeTeam: match.homeTeam?.name || "",
+    awayTeam: match.awayTeam?.name || "",
+    league: match.league || "",
+    matchDate: match.matchDate || "",
+    matchTime: match.matchTime || "00:00",
+    playType,
+    playName: playNameMap[playType] || playType,
+    selection,
+    selectionLabel,
+    odds: Number(odds),
+    handicap,
+    isSingle: isSingleFor(match, playType),
+  });
+}
+
+/**
+ * 检查赔率是否已选中
+ */
+function isOddsSelected(matchId, playType, selection) {
+  return betCartStore.isSelected(matchId, playType, selection);
+}
+
+/**
+ * 检查某场比赛是否有选项被选中
+ */
+function hasMatchSelection(matchId) {
+  return betCartStore.selections.some((s) => s.matchId === matchId);
+}
 </script>
 
 <style lang="scss" scoped>
@@ -451,7 +546,7 @@ function pickLeagueColor(league) {
   }
 
   .count {
-    color: #f43f5e;
+    color: #ff7875;
     font-weight: 500;
   }
 
@@ -636,8 +731,8 @@ function pickLeagueColor(league) {
   }
 
   &.red {
-    color: #f43f5e;
-    background-color: #fee;
+    color: #ff7875;
+    background-color: #fff1f0;
   }
 }
 
@@ -664,16 +759,30 @@ function pickLeagueColor(league) {
   box-sizing: border-box;
   min-width: 0;
   height: 60rpx;
+  transition: all 0.2s;
+  cursor: pointer;
 
   &.single-ok {
-    border-color: #fd7088;
+    border-color: #ffa39e;
     border-width: 1rpx;
+  }
+
+  &.selected {
+    background: #ff7875;
+    border-color: #ff7875;
+
+    .label,
+    .value {
+      color: #fff !important;
+      font-weight: 600;
+    }
   }
 
   &.not-sale {
     border-color: #e5e5e5;
     background: #f9f9f9;
     justify-content: center;
+    cursor: not-allowed;
   }
 
   .label {
@@ -713,6 +822,12 @@ function pickLeagueColor(league) {
   word-break: break-all;
   width: 56rpx;
   font-weight: 500;
+  transition: all 0.2s;
+
+  &.active {
+    color: #ff7875;
+    font-weight: 700;
+  }
 }
 
 .state {
